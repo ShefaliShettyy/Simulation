@@ -37,3 +37,4 @@ matplotlib>=3.7.0       # optional plotting in the optimiser
 # Tested pin-set (if you need fully reproducible versions):
 #   numpy==1.26.4  pandas==2.1.4  scikit-learn==1.4.2
 # -----------------------------------------------------------------------------
+ortools==9.15.6755
