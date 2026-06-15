@@ -1,28 +1,3 @@
-"""
-stress_test.py — integration layer that wires the DisruptionInjector into the
-existing optimize -> simulate -> (ML / hierarchical) pipeline.
-
-NOTHING in your engine files is modified. This module composes on top of them,
-matching the project's existing style (HierarchicalRouter, _StaffingModel are
-all standalone, side-effect-free objects). It exposes three entry points:
-
-  1. stress_test_plan(...)       — run ONE disrupted sim of a fixed roster on
-                                   any engine (base / cost / realism / ML /
-                                   hierarchical) and print the windowed report.
-
-  2. stress_test_optimized(...)  — the headline "what-if": run your existing
-                                   Stage 1+2 loop BLIND (optimiser never sees the
-                                   shock), then stress-test the converged roster.
-
-  3. make_disruption_evaluator(...) — a drop-in SimulationEvaluator subclass for
-                                   when you WANT the evaluator to run disrupted
-                                   (e.g. a reactive-replanning experiment).
-
-Heavy deps (OR-Tools, sklearn, scipy, eda, cost_system) are imported lazily
-inside the functions that need them, so this module imports cleanly with only
-SimPy present.
-"""
-
 from __future__ import annotations
 
 import copy
