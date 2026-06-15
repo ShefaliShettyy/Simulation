@@ -1,7 +1,3 @@
-"""
-cost_system.py — business-cost layer (user's full version).
-"""
-
 from __future__ import annotations
 
 import logging
