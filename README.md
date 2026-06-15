@@ -113,30 +113,7 @@ roster) runs **without any solver installed**.
 python run.py
 ```
 
-**Stress-test demo on the base engine** (no solver needed):
 
-```bash
-python callcenter/stress_test.py
-```
-
-**Hierarchical overflow demo** (no solver needed):
-
-```bash
-python callcenter/hierarchical_overflow.py
-```
-
-**Tests / smoke checks:**
-
-```bash
-python tests/test_all.py
-# or, if you use pytest:
-pytest -q
-```
-
-`test_all.py` exercises the base, ML and hierarchical engines, the disruption
-evaluator, and the full blind-optimise → stress-test pipeline. The first two
-stages run with only `simpy` + `numpy`; the optimiser stages require a solver
-backend.
 
 ---
 
