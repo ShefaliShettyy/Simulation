@@ -1,7 +1,3 @@
-"""
-core_simulation.py — staged copy of the user's module (unmodified).
-"""
-
 from __future__ import annotations
 
 import random
