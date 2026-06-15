@@ -1,3 +1,34 @@
+"""
+optimization.py  —  restructured CP-SAT staffing optimiser
+==========================================================
+
+What changed in this restructure
+--------------------------------
+The previous `StaffingOptimizer.solve()` was a single ~120-line method that
+built variables, linked coverage, added floors, set the objective and solved,
+all inline. That made it hard to add constraints without touching working code.
+
+This version splits model construction into a composable builder,
+`_StaffingModel`, with one method per concern:
+
+    add_decision_vars -> add_coverage_links -> add_base_floors
+    -> add_total_agent_cap -> add_labour_constraints -> set_objective
+
+`solve()` is now a short pipeline that reads top-to-bottom, and new constraints
+are added by writing one method on the builder and one config flag — no surgery
+on the objective or the solver call.
+
+It also adds a richer set of call-centre labour constraints (see
+`LabourConstraintConfig`) and a genuine secondary objective term (over-staffing /
+idle minimisation alongside cost). Shrinkage gross-up is applied in the Erlang
+floor builder, which is the WFM-correct place for it.
+
+Everything downstream — `OptimizationResult`, `SimulationEvaluator`,
+`OptimizeSimulateLoop`, `LoopReport` — keeps the same public shape, so this is a
+drop-in replacement. (This file now contains the constraint logic that was in the
+standalone `optimizer_constraints.py`, which it supersedes.)
+"""
+
 from __future__ import annotations
 
 import copy
