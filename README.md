@@ -31,14 +31,14 @@ call-center-wfm/
 │   ├── cost_system.py            # business-cost layer on top of the sim
 │   ├── ml_system.py              # LinUCB router, predictors, feedback loop
 │   ├── eda.py                    # data-quality gate before model training
-│   ├── hierarchical_overflow.py  # wait-time-driven pool escalation engine
+│   ├── hierarchical_overflow.py  # wait-time-driven pool escalation engine (NOT_COMPLETED)
 │   ├── optimization.py           # CP-SAT staffing optimiser (Gurobi backend)
 │   ├── optimization_ortools.py   # same optimiser, OR-Tools backend (free)
-│   ├── disruption_injector.py    # demand/supply shocks + windowed KPI analyser
+│   ├── disruption_injector.py    # demand/supply shocks + windowed KPI analyser(NOT_COMPLETED)
 │   └── stress_test.py            # ties disruptions into the optimise→simulate pipeline
 └── tests/
-    ├── conftest.py             # makes `callcenter/` importable under pytest
-    └── test_all.py             # smoke tests across all engines + full pipeline
+    ├── conftest.py             # makes `callcenter/` importable under pytest (NOT_COMPLETED)
+    └── test_all.py             # smoke tests across all engines + full pipeline(NOT_COMPLETED)
 ```
 
 The library modules live flat inside `callcenter/` and import each other by
