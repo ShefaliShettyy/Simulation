@@ -140,31 +140,6 @@ backend.
 
 ---
 
-## Minimal code example
 
-```python
-import sys, os
-sys.path.insert(0, "callcenter")          # or run from inside the package
 
-from core_simulation import SimulationConfig
-from stress_test import stress_test_plan, compound
 
-cfg = SimulationConfig(arrival_rate_per_hour=120,
-                       agents_per_skill={"billing": 8, "technical": 8, "general": 6})
-
-# Run a compound (demand spike + billing outage) shock against a fixed roster:
-engine, injector, kpis = stress_test_plan(cfg.agents_per_skill, compound(), base_cfg=cfg)
-# kpis -> [pre, impact, recovery] windowed SLA / handled / abandonment / cost
-```
-
----
-
-## Notes
-
-- The original `requirements.txt` was a scratchpad of shell commands and
-  referenced a Streamlit `app.py` that is **not part of this codebase** (no
-  module imports `streamlit`, `altair`, or `cvxpy`). Those were dropped from the
-  cleaned-up requirements; add them back only if you reintroduce a dashboard.
-- Library module source is unchanged from the original engine files; only a
-  small import-path bootstrap was added at the top of the entry points
-  (`run.py`, `tests/test_all.py`) so the project runs without an install step.
