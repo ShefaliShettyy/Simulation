@@ -1,4 +1,4 @@
-# Call-Center Workforce Management & Optimisation
+# Workforce Management & Optimisation
 
 A discrete-event simulation of a multi-skill contact centre, with a cost model,
 an online-learning ML routing layer, a CP-SAT staffing optimiser, and a
