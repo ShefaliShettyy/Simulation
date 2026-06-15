@@ -1,0 +1,39 @@
+# =============================================================================
+# Call-Center WFM — Python dependencies
+# -----------------------------------------------------------------------------
+# Install with:   pip install -r requirements.txt
+#
+# This installs everything needed to run the simulation, cost layer, ML layer,
+# EDA, hierarchical overflow engine, and the disruption / stress-test layer.
+#
+# The CP-SAT staffing OPTIMISER needs ONE solver backend in addition to the
+# below — see the "Solver backend" section at the bottom and the README.
+# =============================================================================
+
+# --- Required (hard imports) -------------------------------------------------
+simpy>=4.1.1            # discrete-event simulation engine
+numpy>=1.24.0           # numerics (ML features, EDA, optimiser math)
+
+# --- Recommended (optional imports; code falls back if absent, but these
+#     enable the full ML / statistics / reporting functionality) -------------
+scipy>=1.10.0           # survival/patience model, small-n confidence intervals
+scikit-learn>=1.3.0     # predictors (LogisticRegression, GBR), AUC / Brier
+pandas>=1.5.3           # tabular reporting in the hierarchical engine
+matplotlib>=3.7.0       # optional plotting in the optimiser
+
+# --- Solver backend (choose ONE; required only for the optimiser) ------------
+# The optimiser ships with two interchangeable backends exposing the same API:
+#   * callcenter/optimization.py          -> Gurobi   (import gurobipy)
+#   * callcenter/optimization_ortools.py  -> OR-Tools (import ortools)
+#
+# By default run.py and the tests import `optimization` (the Gurobi backend).
+# To use the free OR-Tools backend instead, see the README ("Optimiser
+# backends"). Uncomment the line for the backend you intend to use:
+#
+# ortools>=9.8           # free, pip-installable  (recommended)
+# gurobipy>=11.0         # commercial; requires a Gurobi license
+
+# -----------------------------------------------------------------------------
+# Tested pin-set (if you need fully reproducible versions):
+#   numpy==1.26.4  pandas==2.1.4  scikit-learn==1.4.2
+# -----------------------------------------------------------------------------

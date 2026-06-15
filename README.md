@@ -1,0 +1,170 @@
+# Call-Center Workforce Management & Optimisation
+
+A discrete-event simulation of a multi-skill contact centre, with a cost model,
+an online-learning ML routing layer, a CP-SAT staffing optimiser, and a
+"what-if" disruption / stress-testing layer.
+
+The system answers three questions:
+
+1. **How does a given roster behave?** — simulate arrivals, skill-based routing,
+   queues, breaks, abandonment and first-call-resolution, then report SLA, cost
+   and utilisation KPIs.
+2. **What is the cost-optimal roster?** — a CP-SAT optimiser proposes staffing
+   per skill and shift, which is then validated in simulation (optimise → simulate
+   loop).
+3. **Does that "optimal" roster survive the real world?** — inject demand spikes
+   and agent outages and measure degradation and recovery in pre / impact /
+   recovery windows.
+
+---
+
+## Directory structure
+
+```
+call-center-wfm/
+├── README.md
+├── requirements.txt
+├── .gitignore
+├── run.py                      # end-to-end demo / entry point
+├── callcenter/                 # the library (importable modules)
+│   ├── core_simulation.py        # SimPy engine, config, KPIs, agents, routing
+│   ├── cost_system.py            # business-cost layer on top of the sim
+│   ├── ml_system.py              # LinUCB router, predictors, feedback loop
+│   ├── eda.py                    # data-quality gate before model training
+│   ├── hierarchical_overflow.py  # wait-time-driven pool escalation engine
+│   ├── optimization.py           # CP-SAT staffing optimiser (Gurobi backend)
+│   ├── optimization_ortools.py   # same optimiser, OR-Tools backend (free)
+│   ├── disruption_injector.py    # demand/supply shocks + windowed KPI analyser
+│   └── stress_test.py            # ties disruptions into the optimise→simulate pipeline
+└── tests/
+    ├── conftest.py             # makes `callcenter/` importable under pytest
+    └── test_all.py             # smoke tests across all engines + full pipeline
+```
+
+The library modules live flat inside `callcenter/` and import each other by
+plain module name (`from core_simulation import ...`). This is intentional — it
+keeps the engine code unchanged from the original. The entry points (`run.py`,
+`tests/test_all.py`) add `callcenter/` to the import path automatically, so no
+installation step is required.
+
+---
+
+## Architecture
+
+The modules form clear layers; each builds on the one below without modifying it.
+
+| Layer | Module | Responsibility |
+|-------|--------|----------------|
+| **Core** | `core_simulation.py` | Discrete-event SimPy model: arrivals, skill mix, customer tiers, queues, breaks, KPIs. Defines `SimulationConfig`, `SimulationEngine`, `RealisticsAwareEngine`, `MonteCarloRunner`. |
+| **Cost** | `cost_system.py` | Wraps an engine to attach wages, overhead, abandonment/SLA penalties and churn. `CostAwareEngine`, `CostConfig`, `CostReport`. |
+| **ML** | `ml_system.py` | A LinUCB contextual bandit makes routing decisions and learns online; predictors (CSAT / resolution / abandonment) feed it as features. `MLSimulationEngine`, `MLRegistry`, `FeedbackLoop`, `build_registry`. |
+| **Data quality** | `eda.py` | Gates training data: leakage guard, zero-variance / collinearity checks, class balance, cross-epoch drift. `EDALayer`, `DatasetDiagnostics`. |
+| **Overflow** | `hierarchical_overflow.py` | An operational escape valve: the longer a call waits, the wider the agent pool allowed to serve it. `HierarchicalOverflowEngine`, `HierarchicalRouter`, `TierConfig`. |
+| **Optimisation** | `optimization.py` / `optimization_ortools.py` | CP-SAT/MIP staffing optimiser plus the optimise→simulate loop. `StaffingOptimizer`, `OptimizationConfig`, `OptimizeSimulateLoop`, `SimulationEvaluator`, `ErlangC`. |
+| **Stress test** | `disruption_injector.py` + `stress_test.py` | Bolts demand/supply shocks onto *any* engine and isolates KPIs into pre / impact / recovery windows. `stress_test_plan`, `stress_test_optimized`. |
+
+The headline experiment is **`stress_test_optimized`**: it runs the optimiser
+*blind* (the solver never sees the shock), then stress-tests the converged
+roster — i.e. "a perfect schedule meets real-world volatility".
+
+---
+
+## Installation
+
+Python 3.9+ is recommended.
+
+```bash
+# (optional) create a virtual environment
+python -m venv .venv && source .venv/bin/activate    # Windows: .venv\Scripts\activate
+
+pip install -r requirements.txt
+```
+
+This installs the simulation, cost, ML, EDA, hierarchical and stress-test
+functionality. `scipy`, `scikit-learn`, `pandas` and `matplotlib` are optional —
+the code falls back to closed-form behaviour if any are missing — but they are
+included so the ML and reporting layers run at full fidelity.
+
+### Optimiser backends (only needed for the staffing optimiser)
+
+The optimiser ships with two interchangeable backends exposing the **same public
+API**. `run.py` and the tests import the module named `optimization`, which is
+the **Gurobi** backend by default.
+
+- **OR-Tools (free, recommended):** `pip install ortools`, then make the
+  OR-Tools file the active backend:
+  ```bash
+  # from the callcenter/ directory
+  cp optimization_ortools.py optimization.py      # back up the original first if you like
+  ```
+- **Gurobi (commercial license required):** `pip install gurobipy` and activate a
+  license. No file change needed — `optimization.py` already uses Gurobi.
+
+Everything except the optimiser (simulation, cost, ML, stress-testing of a fixed
+roster) runs **without any solver installed**.
+
+---
+
+## Running it
+
+**Full end-to-end demo** (needs a solver backend for the optimiser stages):
+
+```bash
+python run.py
+```
+
+**Stress-test demo on the base engine** (no solver needed):
+
+```bash
+python callcenter/stress_test.py
+```
+
+**Hierarchical overflow demo** (no solver needed):
+
+```bash
+python callcenter/hierarchical_overflow.py
+```
+
+**Tests / smoke checks:**
+
+```bash
+python tests/test_all.py
+# or, if you use pytest:
+pytest -q
+```
+
+`test_all.py` exercises the base, ML and hierarchical engines, the disruption
+evaluator, and the full blind-optimise → stress-test pipeline. The first two
+stages run with only `simpy` + `numpy`; the optimiser stages require a solver
+backend.
+
+---
+
+## Minimal code example
+
+```python
+import sys, os
+sys.path.insert(0, "callcenter")          # or run from inside the package
+
+from core_simulation import SimulationConfig
+from stress_test import stress_test_plan, compound
+
+cfg = SimulationConfig(arrival_rate_per_hour=120,
+                       agents_per_skill={"billing": 8, "technical": 8, "general": 6})
+
+# Run a compound (demand spike + billing outage) shock against a fixed roster:
+engine, injector, kpis = stress_test_plan(cfg.agents_per_skill, compound(), base_cfg=cfg)
+# kpis -> [pre, impact, recovery] windowed SLA / handled / abandonment / cost
+```
+
+---
+
+## Notes
+
+- The original `requirements.txt` was a scratchpad of shell commands and
+  referenced a Streamlit `app.py` that is **not part of this codebase** (no
+  module imports `streamlit`, `altair`, or `cvxpy`). Those were dropped from the
+  cleaned-up requirements; add them back only if you reintroduce a dashboard.
+- Library module source is unchanged from the original engine files; only a
+  small import-path bootstrap was added at the top of the entry points
+  (`run.py`, `tests/test_all.py`) so the project runs without an install step.
